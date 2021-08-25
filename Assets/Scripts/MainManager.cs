@@ -3,14 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
+    public static MainManager Instance;
+
+    public Text playerName;
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
+
     public Text ScoreText;
+    public int HighScore;
+    public Text HighScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -18,7 +25,59 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
-    
+    private void Awake()
+    {
+        {
+            if (Instance != null)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+
+            LoadScoreAndName();
+            
+        }
+    }
+
+    [System.Serializable]
+    class SaveData
+    {
+        public Text playerName;
+        public Text HighScoreText;
+        public int HighScore;
+
+    }
+
+    public void SaveScoreAndName()
+    {
+        SaveData data = new SaveData();
+        data.playerName = playerName;
+        data.HighScoreText = HighScoreText;
+        data.HighScore = HighScore;
+
+        string json = JsonUtility.ToJson(data);
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public void LoadScoreAndName()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            playerName = data.playerName;
+            HighScoreText = data.HighScoreText;
+            HighScore = data.HighScore;
+        }
+    }
+
+
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -65,6 +124,13 @@ public class MainManager : MonoBehaviour
     void AddPoint(int point)
     {
         m_Points += point;
+
+        if (m_Points > HighScore)
+        {
+            HighScore = m_Points;
+            HighScoreText.text = $"High Score : {HighScore}";
+        }
+        
         ScoreText.text = $"Score : {m_Points}";
     }
 
